@@ -1,0 +1,37 @@
+import { chromium } from '/Users/eozudogru/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright-core/index.mjs';
+import assert from 'node:assert/strict';
+const browser = await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+const page = await browser.newPage();
+const errors=[];
+page.on('pageerror', error=>errors.push(error.message));
+await page.goto(new URL('./index.html', import.meta.url).href);
+await page.evaluate(()=>document.querySelectorAll('img').forEach(img=>img.loading='eager'));
+await page.evaluate(()=>document.fonts.ready);
+for (const width of [1440,768,390,320]) {
+ await page.setViewportSize({width,height:1000});
+ await page.evaluate(()=>Promise.all([...document.images].map(img=>img.decode())));
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow at ${width}`);
+ await page.screenshot({path:`preview-${width}.png`,fullPage:true});
+ console.log(`Layout and images OK: ${width}px`);
+}
+await page.locator('.menu-toggle').click();
+assert.equal(await page.locator('.menu-toggle').getAttribute('aria-expanded'),'true');
+await page.keyboard.press('Escape');
+assert.equal(await page.locator('.menu-toggle').getAttribute('aria-expanded'),'false');
+await page.locator('[data-car]').nth(1).click();
+assert.equal(await page.locator('#car').inputValue(),'Toyota Verso · 2016');
+await page.locator('#pickup').fill('2027-05-10');
+await page.locator('#return').fill('2027-05-09');
+assert.equal(await page.locator('#quote-form').evaluate(form=>form.checkValidity()),false);
+await page.locator('#return').fill('2027-05-15');
+await page.evaluate(()=>{ window.open=(url)=>{window.capturedURL=url;}; });
+await page.locator('.form-grid button').click();
+const url = await page.evaluate(()=>window.capturedURL);
+assert(url.startsWith('https://wa.me/908508400387?text='));
+assert(decodeURIComponent(url).includes('Toyota Verso · 2016'));
+assert(decodeURIComponent(url).includes('10 Mayıs 2027'));
+await page.locator('button[value="email"]').click();
+assert((await page.locator('#form-status').textContent()).includes('E-posta uygulamanızda'));
+assert.equal(errors.length,0,errors.join('\n'));
+console.log('Menu, car selection, date validation and WhatsApp message OK. No JavaScript errors.');
+await browser.close();
