@@ -23,6 +23,11 @@ try {
     }));
     assert.equal(layout.overflow, false, `Horizontal overflow: ${width}`);
     assert(layout.fields.every(field => field.inside && field.height >= 50 && !field.clipped), `Form clipped: ${width}: ${JSON.stringify(layout)}`);
+    const dateLayout = await page.locator('#pickup').evaluate(input => {
+      const style = getComputedStyle(input);
+      return { display: style.display, alignItems: style.alignItems, appearance: style.appearance };
+    });
+    assert(['inline-flex', 'flex'].includes(dateLayout.display) && dateLayout.alignItems === 'center' && dateLayout.appearance === 'auto', `Native date layout overridden: ${width}`);
     console.log(`Form layout and floating shortcut OK at ${width}px`);
   }
   await page.setViewportSize({ width: 390, height: 900 });
