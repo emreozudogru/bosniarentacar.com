@@ -32,3 +32,17 @@ Repo'nun `assets/` klasöründeki var olan `logo.png`, `mostar.jpg`, `octavia.jp
 ## Yayınlama
 
 Herhangi bir statik hosting (GitHub Pages, Cloudflare Pages, Netlify vb.) kullanılabilir. Alan adı DNS ve hosting ayarları bu repodaki HTML dosyalarından ayrı olarak yapılandırılmalıdır.
+
+### Sites yayını ve SEO
+
+Sites projesi: `appgprj_6ad3298578908191b2b9c40e31a9474a`. Canlı adres: https://bosnia-rent-a-car.frmax-8523.chatgpt.site/ . Sites deposunda yayın dosyaları `dist/` altındadır; GitHub deposunda aynı dosyalar kök dizindedir.
+
+Canonical, Open Graph, Twitter, AutoRental/WebSite/WebPage JSON-LD, robots.txt ve sitemap.xml mevcut canlı Sites adresini kullanır. Özel alan adı bu yayına bağlandığında bu dosyalardaki origin adresleri birlikte güncellenmelidir. Google Search Console doğrulaması ve site haritası gönderimi hesap erişimiyle ayrıca yapılır; kod değişikliği indekslenme veya sıralama garantisi vermez.
+
+Safari için form alanlarında min-width ve yerel kontrol boyutları tanımlıdır. Dar telefonlarda tarihler alt alta gelir. Sabit WhatsApp kısayolu teklif formu görünürken gizlenir.
+
+### Kontroller
+
+`tests/smoke.mjs` için Playwright gerekir. Statik sunucuyu açtıktan sonra `node tests/smoke.mjs` çalıştırın. İsteğe bağlı değişkenler: `TEST_URL`, `TEST_BROWSER=webkit`, `PLAYWRIGHT_MODULE` ve `BROWSER_EXECUTABLE`. Test gerçek mesaj göndermez. Gerçek Safari WebDriver testi için Safari ayarlarında uzaktan otomasyon açık olmalıdır.
+
+Sites kaynak erişimi ile GitHub push ayrı bağlantılardır. Sites kaynağını açmak için Sites aracının verdiği kısa ömürlü kimlik bilgisi ve kaynak Git sunucusuna ağ erişimi gerekir; erişim anahtarları repoya yazılmamalıdır. Başka bir Work oturumunun ağ politikası bu HTML/CSS/JS dosyalarıyla değiştirilemez.

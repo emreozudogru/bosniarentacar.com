@@ -7,6 +7,17 @@ const pickup = document.querySelector('#pickup');
 const returnDate = document.querySelector('#return');
 const carSelect = document.querySelector('#car');
 const formStatus = document.querySelector('#form-status');
+const floatingContact = document.querySelector('.floating-whatsapp');
+
+// Keep the fixed contact shortcut clear of the form and its native date picker.
+if ('IntersectionObserver' in window) {
+  const formVisibility = new IntersectionObserver(([entry]) => {
+    floatingContact.hidden = entry.isIntersecting;
+  }, { rootMargin: '80px 0px 80px 0px' });
+  formVisibility.observe(form);
+} else {
+  floatingContact.hidden = true;
+}
 
 function closeMenu() {
   navigation.classList.remove('open');
