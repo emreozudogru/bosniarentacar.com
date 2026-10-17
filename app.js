@@ -1,52 +1,91 @@
 'use strict';
+
 const menuToggle = document.querySelector('.menu-toggle');
-const navigation = document.querySelector('#navigation');
-function closeMenu() {
-  menuToggle.setAttribute('aria-expanded', 'false');
-  menuToggle.setAttribute('aria-label', 'Menüyü aç');
-  navigation.classList.remove('open');
-}
-menuToggle.addEventListener('click', () => {
-  const open = menuToggle.getAttribute('aria-expanded') !== 'true';
-  menuToggle.setAttribute('aria-expanded', String(open));
-  menuToggle.setAttribute('aria-label', open ? 'Menüyü kapat' : 'Menüyü aç');
-  navigation.classList.toggle('open', open);
-});
-navigation.addEventListener('click', event => { if (event.target.closest('a')) closeMenu(); });
-document.addEventListener('keydown', event => { if (event.key === 'Escape' && navigation.classList.contains('open')) { closeMenu(); menuToggle.focus(); } });
+const navigation = document.querySelector('#site-navigation');
 const form = document.querySelector('#quote-form');
 const pickup = document.querySelector('#pickup');
 const returnDate = document.querySelector('#return');
-const car = document.querySelector('#car');
-const status = document.querySelector('#form-status');
-function localDate(date) {
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+const carSelect = document.querySelector('#car');
+const formStatus = document.querySelector('#form-status');
+
+function closeMenu() {
+  navigation.classList.remove('open');
+  menuToggle.setAttribute('aria-expanded', 'false');
+  menuToggle.setAttribute('aria-label', 'Menüyü aç');
 }
-function syncDates() {
-  pickup.min = localDate(new Date());
-  const earliest = new Date(`${pickup.value || pickup.min}T12:00:00`);
-  earliest.setDate(earliest.getDate()+1);
-  returnDate.min = localDate(earliest);
+
+menuToggle.addEventListener('click', () => {
+  const isOpen = menuToggle.getAttribute('aria-expanded') !== 'true';
+  navigation.classList.toggle('open', isOpen);
+  menuToggle.setAttribute('aria-expanded', String(isOpen));
+  menuToggle.setAttribute('aria-label', isOpen ? 'Menüyü kapat' : 'Menüyü aç');
+});
+navigation.addEventListener('click', event => {
+  if (event.target.closest('a')) closeMenu();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && navigation.classList.contains('open')) {
+    closeMenu();
+    menuToggle.focus();
+  }
+});
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 780) closeMenu();
+});
+
+function formatLocalInputDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function updateDateLimits() {
+  const today = formatLocalInputDate(new Date());
+  pickup.min = today;
+  const pickupIsValid = pickup.value && pickup.value >= today;
+  const earliest = new Date(`${pickupIsValid ? pickup.value : today}T12:00:00`);
+  earliest.setDate(earliest.getDate() + 1);
+  returnDate.min = formatLocalInputDate(earliest);
   returnDate.setCustomValidity(returnDate.value && returnDate.value < returnDate.min ? 'İade tarihi alış tarihinden sonra olmalıdır.' : '');
 }
-syncDates();
-pickup.addEventListener('input', syncDates);
-returnDate.addEventListener('input', syncDates);
-document.querySelectorAll('[data-car]').forEach(link => link.addEventListener('click', () => {
-  car.value = link.dataset.car;
-  status.textContent = `${car.value} seçildi. Fiyat almak için tarihlerinizi girin.`;
-  pickup.focus({ preventScroll: true });
-}));
-function displayDate(value) { return new Date(`${value}T12:00:00`).toLocaleDateString('tr-TR', {day:'numeric',month:'long',year:'numeric'}); }
+
+updateDateLimits();
+pickup.addEventListener('input', () => { updateDateLimits(); });
+returnDate.addEventListener('input', () => { updateDateLimits(); });
+
+document.querySelectorAll('[data-car]').forEach(link => {
+  link.addEventListener('click', () => {
+    carSelect.value = link.dataset.car;
+    formStatus.textContent = `${carSelect.value} seçildi. Şimdi alış ve iade tarihlerini belirtin.`;
+    window.setTimeout(() => { pickup.focus({ preventScroll: true }); }, 250);
+  });
+});
+
+function readableDate(value) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 form.addEventListener('submit', event => {
   event.preventDefault();
-  syncDates();
+  updateDateLimits();
   if (!form.reportValidity()) return;
-  const message = `Merhaba, araç kiralama için fiyat ve müsaitlik bilgisi almak istiyorum.\n\nAraç: ${car.value || 'Birlikte karar verelim'}\nAlış tarihi: ${displayDate(pickup.value)}\nİade tarihi: ${displayDate(returnDate.value)}\n\nTeslim alma ve kiralama koşulları hakkında bilgi verebilir misiniz?`;
+  const message = [
+    'Merhaba, araç kiralama için fiyat ve müsaitlik bilgisi almak istiyorum.',
+    '',
+    `Araç: ${carSelect.value || 'Henüz karar vermedim'}`,
+    `Alış tarihi: ${readableDate(pickup.value)}`,
+    `İade tarihi: ${readableDate(returnDate.value)}`,
+    '',
+    'Teslim yeri, sigorta ve kiralama koşulları hakkında bilgi verebilir misiniz?'
+  ].join('\n');
   const email = event.submitter?.value === 'email';
-  const url = email ? `mailto:info@bosniarentacar.com?subject=${encodeURIComponent('Araç kiralama fiyat talebi')}&body=${encodeURIComponent(message)}` : `https://wa.me/908508400387?text=${encodeURIComponent(message)}`;
-  if (email) window.location.href = url;
-  else window.open(url, '_blank', 'noopener,noreferrer');
-  status.textContent = email ? 'E-posta uygulamanızda hazırlanan mesajı göndererek talebinizi iletebilirsiniz.' : 'WhatsApp’ta hazırlanan mesajı göndererek talebinizi iletebilirsiniz.';
+  if (email) {
+    const url = `mailto:info@bosniarentacar.com?subject=${encodeURIComponent('Araç kiralama fiyat talebi')}&body=${encodeURIComponent(message)}`;
+    window.location.href = url;
+    formStatus.textContent = 'E-posta uygulamanızda hazırlanan mesajı göndermeniz gerekir.';
+  } else {
+    const url = `https://wa.me/908508400387?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    formStatus.textContent = 'WhatsApp üzerinden hazırlanan mesajı göndermeniz gerekir.';
+  }
 });
-document.querySelector('#year').textContent = new Date().getFullYear();
+
+document.querySelector('#year').textContent = String(new Date().getFullYear());
